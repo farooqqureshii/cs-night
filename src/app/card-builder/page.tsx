@@ -123,118 +123,8 @@ export default function CardBuilder() {
     }
   };
 
-  const copyToClipboard = async () => {
-    if (exportedImageUrl && navigator.clipboard) {
-      try {
-        const response = await fetch(exportedImageUrl);
-        const blob = await response.blob();
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            [blob.type]: blob
-          })
-        ]);
-        alert('Image copied to clipboard! You can now paste it in other apps.');
-      } catch (error) {
-        console.error('Error copying to clipboard:', error);
-        alert('Could not copy to clipboard. Try long pressing the image instead.');
-      }
-    } else {
-      alert('Clipboard not supported. Try long pressing the image to save.');
-    }
-  };
-
-  const openInNewTab = () => {
-    if (exportedImageUrl) {
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>${cardData.name} - uOttawa Card</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                body { 
-                  margin: 0; 
-                  padding: 20px; 
-                  background: #f5f5f5; 
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                  text-align: center;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                  min-height: 100vh;
-                }
-                img { 
-                  max-width: 100%; 
-                  height: auto; 
-                  border-radius: 12px;
-                  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                  margin: 20px 0;
-                }
-                .instructions {
-                  margin: 20px 0;
-                  padding: 20px;
-                  background: white;
-                  border-radius: 12px;
-                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                  max-width: 400px;
-                }
-                .download-btn {
-                  display: inline-block;
-                  background: #2563eb;
-                  color: white;
-                  padding: 15px 30px;
-                  border-radius: 8px;
-                  text-decoration: none;
-                  margin: 10px;
-                  font-weight: bold;
-                  font-size: 16px;
-                }
-                .mobile-tip {
-                  background: #fef3c7;
-                  border: 1px solid #f59e0b;
-                  border-radius: 8px;
-                  padding: 15px;
-                  margin: 15px 0;
-                  color: #92400e;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="instructions">
-                <h2>Your uOttawa Card is Ready!</h2>
-                <div class="mobile-tip">
-                  <strong>📱 Mobile Users:</strong><br>
-                  Long press the image below to save it to your device.
-                </div>
-                <p>You can also use the download button below.</p>
-              </div>
-              <img src="${exportedImageUrl}" alt="${cardData.name} - uOttawa Card" />
-              <br>
-              <a href="${exportedImageUrl}" download="${cardData.name}-uottawa-card.png" class="download-btn">
-                Download Card
-              </a>
-            </body>
-          </html>
-        `);
-        newWindow.document.close();
-      } else {
-        alert('Popup blocked. Please allow popups for this site and try again.');
-      }
-    }
-  };
-
   const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  };
-
-  const isIOS = () => {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent);
-  };
-
-  const isAndroid = () => {
-    return /Android/.test(navigator.userAgent);
   };
 
   return (
@@ -512,19 +402,9 @@ export default function CardBuilder() {
                       <Smartphone className="w-5 h-5 text-blue-600" />
                       <span className="font-bold text-blue-900">Mobile Instructions</span>
                     </div>
-                    <p className="text-blue-800 text-sm mb-3">
-                      <strong>Primary method:</strong> Long press the image above to save it to your device.
+                    <p className="text-blue-800 text-sm">
+                      Long press the image above to save it to your device, or use the share button below.
                     </p>
-                    {isIOS() && (
-                      <p className="text-blue-800 text-xs bg-blue-100 p-2 rounded">
-                        📱 <strong>iOS:</strong> Long press → "Save to Photos"
-                      </p>
-                    )}
-                    {isAndroid() && (
-                      <p className="text-blue-800 text-xs bg-blue-100 p-2 rounded">
-                        🤖 <strong>Android:</strong> Long press → "Save image"
-                      </p>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -539,41 +419,15 @@ export default function CardBuilder() {
                         Share
                       </motion.button>
                     )}
-                    {navigator.clipboard && (
-                      <motion.button
-                        onClick={copyToClipboard}
-                        className="flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        📋
-                        Copy
-                      </motion.button>
-                    )}
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <p className="text-gray-600 text-sm mb-3">If the above doesn't work, try:</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <motion.button
-                        onClick={openInNewTab}
-                        className="flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-orange-700 transition-colors"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        🔗
-                        Open Tab
-                      </motion.button>
-                      <motion.button
-                        onClick={downloadImage}
-                        className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Download className="w-4 h-4" />
-                        Download
-                      </motion.button>
-                    </div>
+                    <motion.button
+                      onClick={downloadImage}
+                      className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </motion.button>
                   </div>
                 </div>
               ) : (
