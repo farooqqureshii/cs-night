@@ -71,21 +71,89 @@ export default function CardBuilder() {
   const exportCard = async () => {
     if (cardRef.current) {
       setIsExporting(true);
+      console.log('Starting export...');
+      
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Export timed out after 30 seconds')), 30000);
+      });
+      
       try {
-        const canvas = await html2canvas(cardRef.current, {
+        // Optimize for mobile - lower scale and simpler options
+        const isMobileDevice = isMobile();
+        
+        // For mobile, try a simpler approach first
+        if (isMobileDevice) {
+          console.log('Mobile device detected, using optimized settings...');
+        }
+        
+        const exportPromise = html2canvas(cardRef.current, {
           backgroundColor: null,
-          scale: 2,
-          useCORS: true
+          scale: isMobileDevice ? 1 : 2, // Lower scale for mobile performance
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: false, // Disable for better mobile compatibility
+          logging: false, // Disable logging for better performance
+          removeContainer: true, // Clean up after rendering
+          width: cardRef.current.offsetWidth,
+          height: cardRef.current.offsetHeight
         });
         
-        const dataUrl = canvas.toDataURL();
+        // Race between export and timeout
+        const canvas = await Promise.race([exportPromise, timeoutPromise]) as HTMLCanvasElement;
+        
+        console.log('Canvas generated, converting to data URL...');
+        const dataUrl = canvas.toDataURL('image/png', 0.9); // Slightly lower quality for mobile
+        console.log('Data URL created, setting state...');
+        
         setExportedImageUrl(dataUrl);
         setShowExportModal(true);
+        console.log('Export completed successfully');
       } catch (error) {
         console.error('Error exporting card:', error);
-        alert('Failed to export card. Please try again.');
+        
+        // If html2canvas fails on mobile, try a simpler approach
+        if (isMobile() && error instanceof Error && error.message.includes('timeout')) {
+          console.log('html2canvas timed out, trying alternative approach...');
+          try {
+            // Create a simple canvas-based version
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              canvas.width = 384; // w-96 = 384px
+              canvas.height = 512; // h-[32rem] = 512px
+              
+              // Create a simple gradient background
+              const gradient = ctx.createLinearGradient(0, 0, 384, 512);
+              gradient.addColorStop(0, '#f59e0b'); // amber-400
+              gradient.addColorStop(1, '#f97316'); // orange-500
+              ctx.fillStyle = gradient;
+              ctx.fillRect(0, 0, 384, 512);
+              
+              // Add text
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 24px Arial';
+              ctx.fillText(cardData.name, 32, 100);
+              ctx.font = '16px Arial';
+              ctx.fillText(cardData.from, 32, 130);
+              ctx.font = 'bold 20px Arial';
+              ctx.fillText(cardData.character, 32, 160);
+              
+              const simpleDataUrl = canvas.toDataURL('image/png');
+              setExportedImageUrl(simpleDataUrl);
+              setShowExportModal(true);
+              console.log('Simple export completed');
+              return;
+            }
+          } catch (simpleError) {
+            console.error('Simple export also failed:', simpleError);
+          }
+        }
+        
+        alert('Failed to export card. Please try again. Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
       } finally {
         setIsExporting(false);
+        console.log('Export process finished');
       }
     }
   };
