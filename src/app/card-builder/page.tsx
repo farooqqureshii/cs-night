@@ -68,24 +68,35 @@ export default function CardBuilder() {
   const exportCard = async () => {
     if (cardRef.current) {
       try {
+        console.log('Starting export...');
+        
         const canvas = await html2canvas(cardRef.current, {
           backgroundColor: null,
           scale: 2,
-          useCORS: true
+          useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: true
         });
+        
+        console.log('Canvas created successfully');
         
         // Check if we're on mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('Is mobile:', isMobile);
         
         if (isMobile) {
-          // Mobile solution: Open in new tab for manual save
-          const dataUrl = canvas.toDataURL();
-          const newWindow = window.open();
+          // Mobile solution: Simple new tab with image
+          const dataUrl = canvas.toDataURL('image/png');
+          console.log('Data URL created, length:', dataUrl.length);
+          
+          const newWindow = window.open('', '_blank');
           if (newWindow) {
             newWindow.document.write(`
+              <!DOCTYPE html>
               <html>
                 <head>
                   <title>${cardData.name} - uOttawa Card</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
                   <style>
                     body { 
                       margin: 0; 
@@ -107,16 +118,6 @@ export default function CardBuilder() {
                       border-radius: 8px;
                       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                     }
-                    .download-btn {
-                      display: inline-block;
-                      background: #2563eb;
-                      color: white;
-                      padding: 12px 24px;
-                      border-radius: 8px;
-                      text-decoration: none;
-                      margin: 10px;
-                      font-weight: bold;
-                    }
                   </style>
                 </head>
                 <body>
@@ -125,14 +126,14 @@ export default function CardBuilder() {
                     <p>Long press the image below to save it to your device.</p>
                   </div>
                   <img src="${dataUrl}" alt="${cardData.name} - uOttawa Card" />
-                  <br>
-                  <a href="${dataUrl}" download="${cardData.name}-uottawa-card.png" class="download-btn">
-                    Download Card
-                  </a>
                 </body>
               </html>
             `);
             newWindow.document.close();
+            console.log('Mobile new tab opened');
+          } else {
+            console.log('Failed to open new window');
+            alert('Please allow pop-ups for this site to save your card.');
           }
         } else {
           // Desktop solution: Direct download
@@ -140,10 +141,15 @@ export default function CardBuilder() {
           link.download = `${cardData.name}-uottawa-card.png`;
           link.href = canvas.toDataURL();
           link.click();
+          console.log('Desktop download completed');
         }
       } catch (error) {
         console.error('Error exporting card:', error);
+        alert('Export failed. Please try again.');
       }
+    } else {
+      console.log('Card ref is null');
+      alert('Card not found. Please refresh the page.');
     }
   };
 
