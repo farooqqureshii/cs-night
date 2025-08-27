@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Palette, User, MapPin, Star, Code } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Download, Palette, User, MapPin, Star, Code, X, Share2, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import html2canvas from 'html2canvas-pro';
 import Image from 'next/image';
@@ -55,6 +55,9 @@ export default function CardBuilder() {
     }
   });
 
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportedImageUrl, setExportedImageUrl] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const updateCharacter = (character: 'Explorer' | 'Designer' | 'Builder') => {
@@ -67,6 +70,7 @@ export default function CardBuilder() {
 
   const exportCard = async () => {
     if (cardRef.current) {
+      setIsExporting(true);
       try {
         const canvas = await html2canvas(cardRef.current, {
           backgroundColor: null,
@@ -74,77 +78,163 @@ export default function CardBuilder() {
           useCORS: true
         });
         
-        // Check if we're on mobile
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        if (isMobile) {
-          // Mobile solution: Open in new tab for manual save
-          const dataUrl = canvas.toDataURL();
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head>
-                  <title>${cardData.name} - uOttawa Card</title>
-                  <style>
-                    body { 
-                      margin: 0; 
-                      padding: 20px; 
-                      background: #f5f5f5; 
-                      font-family: Arial, sans-serif;
-                      text-align: center;
-                    }
-                    img { 
-                      max-width: 100%; 
-                      height: auto; 
-                      border-radius: 12px;
-                      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                    }
-                    .instructions {
-                      margin: 20px 0;
-                      padding: 15px;
-                      background: white;
-                      border-radius: 8px;
-                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    }
-                    .download-btn {
-                      display: inline-block;
-                      background: #2563eb;
-                      color: white;
-                      padding: 12px 24px;
-                      border-radius: 8px;
-                      text-decoration: none;
-                      margin: 10px;
-                      font-weight: bold;
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="instructions">
-                    <h2>Your uOttawa Card is Ready!</h2>
-                    <p>Long press the image below to save it to your device.</p>
-                  </div>
-                  <img src="${dataUrl}" alt="${cardData.name} - uOttawa Card" />
-                  <br>
-                  <a href="${dataUrl}" download="${cardData.name}-uottawa-card.png" class="download-btn">
-                    Download Card
-                  </a>
-                </body>
-              </html>
-            `);
-            newWindow.document.close();
-          }
-        } else {
-          // Desktop solution: Direct download
-          const link = document.createElement('a');
-          link.download = `${cardData.name}-uottawa-card.png`;
-          link.href = canvas.toDataURL();
-          link.click();
-        }
+        const dataUrl = canvas.toDataURL();
+        setExportedImageUrl(dataUrl);
+        setShowExportModal(true);
       } catch (error) {
         console.error('Error exporting card:', error);
+        alert('Failed to export card. Please try again.');
+      } finally {
+        setIsExporting(false);
       }
     }
+  };
+
+  const downloadImage = () => {
+    if (exportedImageUrl) {
+      const link = document.createElement('a');
+      link.download = `${cardData.name}-uottawa-card.png`;
+      link.href = exportedImageUrl;
+      link.click();
+    }
+  };
+
+  const shareImage = async () => {
+    if (exportedImageUrl && navigator.share) {
+      try {
+        // Convert data URL to blob for sharing
+        const response = await fetch(exportedImageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `${cardData.name}-uottawa-card.png`, { type: 'image/png' });
+        
+        await navigator.share({
+          title: `${cardData.name} - uOttawa Card`,
+          text: `Check out my uOttaHack card!`,
+          files: [file]
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fallback to download
+        downloadImage();
+      }
+    } else {
+      // Fallback to download
+      downloadImage();
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (exportedImageUrl && navigator.clipboard) {
+      try {
+        const response = await fetch(exportedImageUrl);
+        const blob = await response.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob
+          })
+        ]);
+        alert('Image copied to clipboard! You can now paste it in other apps.');
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Could not copy to clipboard. Try long pressing the image instead.');
+      }
+    } else {
+      alert('Clipboard not supported. Try long pressing the image to save.');
+    }
+  };
+
+  const openInNewTab = () => {
+    if (exportedImageUrl) {
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>${cardData.name} - uOttawa Card</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body { 
+                  margin: 0; 
+                  padding: 20px; 
+                  background: #f5f5f5; 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  text-align: center;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 100vh;
+                }
+                img { 
+                  max-width: 100%; 
+                  height: auto; 
+                  border-radius: 12px;
+                  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                  margin: 20px 0;
+                }
+                .instructions {
+                  margin: 20px 0;
+                  padding: 20px;
+                  background: white;
+                  border-radius: 12px;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  max-width: 400px;
+                }
+                .download-btn {
+                  display: inline-block;
+                  background: #2563eb;
+                  color: white;
+                  padding: 15px 30px;
+                  border-radius: 8px;
+                  text-decoration: none;
+                  margin: 10px;
+                  font-weight: bold;
+                  font-size: 16px;
+                }
+                .mobile-tip {
+                  background: #fef3c7;
+                  border: 1px solid #f59e0b;
+                  border-radius: 8px;
+                  padding: 15px;
+                  margin: 15px 0;
+                  color: #92400e;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="instructions">
+                <h2>Your uOttawa Card is Ready!</h2>
+                <div class="mobile-tip">
+                  <strong>📱 Mobile Users:</strong><br>
+                  Long press the image below to save it to your device.
+                </div>
+                <p>You can also use the download button below.</p>
+              </div>
+              <img src="${exportedImageUrl}" alt="${cardData.name} - uOttawa Card" />
+              <br>
+              <a href="${exportedImageUrl}" download="${cardData.name}-uottawa-card.png" class="download-btn">
+                Download Card
+              </a>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        alert('Popup blocked. Please allow popups for this site and try again.');
+      }
+    }
+  };
+
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const isIOS = () => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  };
+
+  const isAndroid = () => {
+    return /Android/.test(navigator.userAgent);
   };
 
   return (
@@ -169,9 +259,9 @@ export default function CardBuilder() {
             </motion.button>
           </Link>
 
-                     <div className="mb-6">
-             <h1 className="text-3xl font-black text-gray-900 border-b-3 border-gray-900 pb-3 font-satoshi">Build Your Card</h1>
-           </div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-black text-gray-900 border-b-3 border-gray-900 pb-3 font-satoshi">Build Your Card</h1>
+          </div>
 
           {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -261,12 +351,22 @@ export default function CardBuilder() {
                 {/* Export Button */}
                 <motion.button
                   onClick={exportCard}
-                  className="w-full bg-gray-900 text-white font-bold py-4 px-6 border-3 border-gray-700 hover:bg-white hover:text-gray-900 transition-all duration-300 text-lg rounded-lg shadow-lg"
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
+                  disabled={isExporting}
+                  className="w-full bg-gray-900 text-white font-bold py-4 px-6 border-3 border-gray-700 hover:bg-white hover:text-gray-900 transition-all duration-300 text-lg rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: isExporting ? 1 : 1.02, y: isExporting ? 0 : -2 }}
+                  whileTap={{ scale: isExporting ? 1 : 0.98 }}
                 >
-                  <Download className="w-5 h-5 inline mr-2" />
-                  Export as PNG
+                  {isExporting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white inline mr-2"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5 inline mr-2" />
+                      Export as PNG
+                    </>
+                  )}
                 </motion.button>
               </div>
             </motion.div>
@@ -284,12 +384,12 @@ export default function CardBuilder() {
                   ref={cardRef}
                   className={`w-96 h-[32rem] ${cardData.colors.background} rounded-xl p-8 relative overflow-hidden border-3 bg-gradient-to-br ${cardData.colors.border} shadow-xl`}
                 >
-                                     {/* Background Pattern */}
-                   <div className="absolute inset-0 opacity-10">
-                     <div className="absolute top-6 right-6 w-20 h-20 border-2 border-white rounded-full"></div>
-                     <div className="absolute bottom-10 left-6 w-10 h-10 border border-white rounded-full"></div>
-                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white rounded-full opacity-30"></div>
-                   </div>
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-6 right-6 w-20 h-20 border-2 border-white rounded-full"></div>
+                    <div className="absolute bottom-10 left-6 w-10 h-10 border border-white rounded-full"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white rounded-full opacity-30"></div>
+                  </div>
 
                   {/* Card Content */}
                   <div className="relative z-10 h-full flex flex-col justify-between">
@@ -347,9 +447,9 @@ export default function CardBuilder() {
 
                     {/* Footer */}
                     <div className="flex justify-between items-end">
-                        <div className="text-white text-sm font-bold space-y-1">
-                          <div>uottahack.ca</div>
-                          <div>2026.uottahack.ca</div>
+                      <div className="text-white text-sm font-bold space-y-1">
+                        <div>uottahack.ca</div>
+                        <div>2026.uottahack.ca</div>
                       </div>
                       <div className="opacity-80">
                         <Image
@@ -367,6 +467,135 @@ export default function CardBuilder() {
           </div>
         </div>
       </div>
+
+      {/* Export Modal */}
+      <AnimatePresence>
+        {showExportModal && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowExportModal(false)}
+          >
+            <motion.div
+              className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl border-3 border-gray-900"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-black text-gray-900">Your Card is Ready!</h3>
+                <button
+                  onClick={() => setShowExportModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {exportedImageUrl && (
+                <div className="mb-4">
+                  <img
+                    src={exportedImageUrl}
+                    alt="Exported Card"
+                    className="w-full rounded-lg border-2 border-gray-200"
+                  />
+                </div>
+              )}
+
+              {isMobile() ? (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Smartphone className="w-5 h-5 text-blue-600" />
+                      <span className="font-bold text-blue-900">Mobile Instructions</span>
+                    </div>
+                    <p className="text-blue-800 text-sm mb-3">
+                      <strong>Primary method:</strong> Long press the image above to save it to your device.
+                    </p>
+                    {isIOS() && (
+                      <p className="text-blue-800 text-xs bg-blue-100 p-2 rounded">
+                        📱 <strong>iOS:</strong> Long press → "Save to Photos"
+                      </p>
+                    )}
+                    {isAndroid() && (
+                      <p className="text-blue-800 text-xs bg-blue-100 p-2 rounded">
+                        🤖 <strong>Android:</strong> Long press → "Save image"
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {navigator.share && (
+                      <motion.button
+                        onClick={shareImage}
+                        className="flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                      </motion.button>
+                    )}
+                    {navigator.clipboard && (
+                      <motion.button
+                        onClick={copyToClipboard}
+                        className="flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        📋
+                        Copy
+                      </motion.button>
+                    )}
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <p className="text-gray-600 text-sm mb-3">If the above doesn't work, try:</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <motion.button
+                        onClick={openInNewTab}
+                        className="flex items-center justify-center gap-2 bg-orange-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-orange-700 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        🔗
+                        Open Tab
+                      </motion.button>
+                      <motion.button
+                        onClick={downloadImage}
+                        className="flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Download className="w-4 h-4" />
+                        Download
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    Your card has been generated successfully! Click download to save it to your device.
+                  </p>
+                  <motion.button
+                    onClick={downloadImage}
+                    className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Card
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
