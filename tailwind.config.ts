@@ -10,6 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         mono: ['Geist Mono', 'monospace'],
+        satoshi: ['Satoshi', 'sans-serif'],
       },
     },
   },

@@ -74,10 +74,73 @@ export default function CardBuilder() {
           useCORS: true
         });
         
-        const link = document.createElement('a');
-        link.download = `${cardData.name}-uottawa-card.png`;
-        link.href = canvas.toDataURL();
-        link.click();
+        // Check if we're on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+          // Mobile solution: Open in new tab for manual save
+          const dataUrl = canvas.toDataURL();
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head>
+                  <title>${cardData.name} - uOttawa Card</title>
+                  <style>
+                    body { 
+                      margin: 0; 
+                      padding: 20px; 
+                      background: #f5f5f5; 
+                      font-family: Arial, sans-serif;
+                      text-align: center;
+                    }
+                    img { 
+                      max-width: 100%; 
+                      height: auto; 
+                      border-radius: 12px;
+                      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                    }
+                    .instructions {
+                      margin: 20px 0;
+                      padding: 15px;
+                      background: white;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .download-btn {
+                      display: inline-block;
+                      background: #2563eb;
+                      color: white;
+                      padding: 12px 24px;
+                      border-radius: 8px;
+                      text-decoration: none;
+                      margin: 10px;
+                      font-weight: bold;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="instructions">
+                    <h2>Your uOttawa Card is Ready!</h2>
+                    <p>Long press the image below to save it to your device.</p>
+                  </div>
+                  <img src="${dataUrl}" alt="${cardData.name} - uOttawa Card" />
+                  <br>
+                  <a href="${dataUrl}" download="${cardData.name}-uottawa-card.png" class="download-btn">
+                    Download Card
+                  </a>
+                </body>
+              </html>
+            `);
+            newWindow.document.close();
+          }
+        } else {
+          // Desktop solution: Direct download
+          const link = document.createElement('a');
+          link.download = `${cardData.name}-uottawa-card.png`;
+          link.href = canvas.toDataURL();
+          link.click();
+        }
       } catch (error) {
         console.error('Error exporting card:', error);
       }
@@ -107,7 +170,7 @@ export default function CardBuilder() {
           </Link>
 
                      <div className="mb-6">
-             <h1 className="text-3xl font-black text-gray-900 border-b-3 border-gray-900 pb-3">Build Your Card</h1>
+             <h1 className="text-3xl font-black text-gray-900 border-b-3 border-gray-900 pb-3 font-satoshi">Build Your Card</h1>
            </div>
 
           {/* Main Content */}
@@ -234,6 +297,11 @@ export default function CardBuilder() {
                     <div className="flex justify-between items-center">
                       <div className="text-white text-base font-bold">uOttaHack @ CS Night 2025</div>
                       <div className="text-white text-xs font-bold">{cardData.language}</div>
+                    </div>
+                    
+                    {/* Date */}
+                    <div className="text-white text-sm font-medium opacity-90 mt-2">
+                      Sep 3 2025
                     </div>
 
                     {/* Main Content Area */}

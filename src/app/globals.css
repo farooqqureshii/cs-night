@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Marck+Script&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@1,900,700,500,301,701,300,501,401,901&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -24,7 +25,7 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
-  font-family: 'Geist Mono', monospace;
+  font-family: 'Satoshi', 'Geist Mono', monospace;
 }
 
 /* Custom scrollbar */

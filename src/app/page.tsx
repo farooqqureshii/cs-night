@@ -129,7 +129,7 @@ export default function Home() {
               transition={{ duration: 0.5 }}
             >
               <div className="bg-white border-3 border-gray-900 px-8 py-4 transform -rotate-1 shadow-xl">
-                <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-none">
+                <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight leading-none font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>
                   {typewriterText}
                 </h1>
                 {isTypewriterComplete && (
@@ -139,7 +139,7 @@ export default function Home() {
                     transition={{ duration: 0.4, delay: 0.5 }}
                     className="mt-2"
                   >
-                    <p className="text-lg md:text-xl font-bold text-gray-900 tracking-wide flex items-center justify-center gap-2">
+                    <p className="text-lg md:text-xl font-bold text-gray-900 tracking-wide flex items-center justify-center gap-2 font-satoshi" style={{ fontFamily: 'Satoshi, sans-serif' }}>
                       <span>{cursiveText}</span>
                       <Heart className="w-5 h-5 text-red-500 fill-current" />
                     </p>
