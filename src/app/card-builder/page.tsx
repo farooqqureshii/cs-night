@@ -100,7 +100,7 @@ export default function CardBuilder() {
   };
 
   const shareImage = async () => {
-    if (exportedImageUrl && navigator.share) {
+    if (exportedImageUrl && typeof navigator.share === 'function') {
       try {
         // Convert data URL to blob for sharing
         const response = await fetch(exportedImageUrl);
@@ -408,7 +408,7 @@ export default function CardBuilder() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    {navigator.share && (
+                    {typeof navigator.share === 'function' && (
                       <motion.button
                         onClick={shareImage}
                         className="flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
